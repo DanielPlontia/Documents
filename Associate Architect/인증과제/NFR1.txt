@@ -1,0 +1,13 @@
+(F1) High Reliability on Coding Trainer Server
+In the event of a problem with the server, the user experiences great inconvenience. If these cases are repeated, the user loses confidence in the system and is not used.
+(F2) Problem occurs on Dispatcher
+If a problem occurs in the dispatcher, Users may not be able to access the server side. The Dispatcher does not perform many functions and each function may be processed in a short time.
+(F3) Error occurs on GPT-4 Service
+A problem may also occur in the server of the GPT-4 service. They may have tried to secure reliability in their own way, but errors may occur.
+
+(C1) Fault Tolerance of Coding Trainer Server (Relevant to F1)
+    The Coding Trainer Server should be fault tolerant. For fault tolerance, three elements should be satisfied: fault detection, diagnosis, and recovery. The system should be operated so that users cannot feel it even in the event of a fault.
+(C2) Recoverable Dispatcher (Relevant to F2)
+    Dispatcher should recoverable. Dispatcher fault will not occur much, but if it occurs, the Web Browser will not be properly assigned to the server. Therefore, it is necessary to recover as soon as possible.
+(C3) Minimize the impact on Fault on GPT-4 Service
+    If a fault occurs in the GPT-4 Service, recovery of the fault must be made. However, this service is not a service that we can restore like the Coding Trainer Server. In the case of GPT-4 service, it is very important to user because this is a main business point.
