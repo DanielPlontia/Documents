@@ -4,11 +4,11 @@ SW부분
 Persistent Data
 Transaction Data
 
-(F1) High Reliability on Coding Trainer Server 22.03 and 22.05
+(F1) High Reliability on Coding Trainer Server
 Coding Trainer Server can be impossible to use by failure. Failures can be caused by fault on software or physical damage. In the event of a problem with the server, the user experiences great inconvenience. If these cases are repeated, the user loses confidence in the system and is not used.
-(F2) High Reliability on Dispatcher 22.05 F2
+(F2) High Reliability on Dispatcher
 If a problem occurs in the dispatcher, Users may not be able to access the server side. The Dispatcher does not perform many functions and each function may be processed in a short time.
-(F3) High Reliability on GPT-4 Service 22.05
+(F3) High Reliability on GPT-4 Service
 A problem may also occur in the server of the GPT-4 service. They may have tried to secure reliability in their own way, but errors may occur.
 (F4) Occur Software Fault 22.03
 Coding Trainer system may cause a fault in internal software. This may lead to poor performance or service failure.
@@ -18,9 +18,9 @@ If the software and dataset are not recovered after server failure, the service 
 
 (C1) Fault Tolerance of Coding Trainer Server (Relevant to F1) 22.05 C1
 The Coding Trainer Server should be fault tolerant. For fault tolerance, three elements should be satisfied: fault detection, diagnosis, and recovery. The system should be operated so that users cannot feel it even in the event of a fault.
-(C2) Distributing service request (Relevant to F1) 22.03 C2
+(C2) Distributing service request (Relevant to F1) 22.03 C3
 The system should be able to manage so that requests are not concentrated on a specific server when there are multiple physical servers that provide services. It should be possible to maintain the minimum performance by lowering the service latency.
-(C3) Recoverable Dispatcher (Relevant to F2) 22.05 C2
+(C3) Recoverable Dispatcher (Relevant to F2) 22.05 C3
 Dispatcher should recoverable. Dispatcher fault will not occur much, but if it occurs, the Web Browser will not be properly assigned to the server. Therefore, it is necessary to recover as soon as possible.
 (C4) Fault Detection and Notification (Relevant to F4) 22.03 C4
 The Coding Trainer System should be able to detect fault and give notice to the staff for recovery.
@@ -28,8 +28,35 @@ The Coding Trainer System should be able to detect fault and give notice to the 
 The target system should detect and handle software agent fault to restart them to normal operation.
 (C6) Minimize the impact on Fault on GPT-4 Service 22.05 C3
 If a fault occurs in the GPT-4 Service, recovery of the fault must be made. However, this service is not a service that we can restore like the Coding Trainer Server. In the case of GPT-4 service, it is very important to user because this is a target system's main business point.
-(C6) System Recovery (Relevant to F5) 22.03 C6
+(C7) System Recovery (Relevant to F5) 22.03 C6
 The Coding Trainer System should detect and handle corruptions on delivered data and current state to offer normal service.
 
-22.04 T7 Passive Redundancy 참고 필요
+안맞을 듯 Redundancy가 아니라서...
+(T1) State resynchronization without redundancy (Relevant to C1)
+The most convenient way to ensure server reliability is to create redundancy. If there is redundancy, if there is a problem with the server, simply change it to a redundant server and operate it. This is a very simple but expensive and resourceful way. We suggest different way to combine several tactics.
+ Retry
+First, when a failure occurs, a logic that checks whether there is an error in the server through the dispatcher, and if there is no abnormality, retry logic should precede it. In this case, the number of retries should be limited. If there is a problem with the server, or the retry limit is exceeded, proceed with the next tactic.
+ Non-stop forwarding with Dispatcher
+Non-stop forwarding through shared session storage with dispatchers is implemented. First, a session storage for storing information on a session is configured so that information on the entire user session can be stored and accessed by servers. And, through dispatcher, users are relocated to healthy servers except for servers with abnormalities, and session information is read to continue using the service. Since the dispatcher periodically checks the health of the server, it can immediately check the abnormality of the server. When Server1 fails, all User1's connections that were connected to Server1 disappear (red line) and connect to other servers that are available through Dispatch (blue line) All of the session's information is integrated and managed by DB, so it can be used immediately by the newly assigned server. In the case of a process that should go through several steps, the state must be divided so that session information can be stored at each step for this configuration. These processes include Speech to Text and ML Model Training. Refer to the activity diagram specified in 5.3.2. and divide the corresponding steps and store session information from time to time.
 
+
+(T1) Passive Redundancy (Relevant to C1) 22.03 T1
+The MSP server uses the passive redundancy tactic to ensure the availability of the service in the state that the server can no longer operate due to a software failure or physical damage.
+MSP System uses Dispatcher Architecture style for QoS, so two or more servers are being built. By creating an active-passive state between servers, it synchronizes the state and data in the server failure situation so that the ongoing service can be continued. If an error occurs as shown in the figure below, the server's status is synchronized and the ongoing service is continued.
+(T1) Passive Redundancy (Relevant to C6) 22.04 T7
+Passive redundancy with checkpoint-based state synchronization is chosen for the most suitable to recover from failures. By the (T4), checkpoints are synchronized to the warm spare at the normal situation (1). When the active node of the server fails, the warm spare starts with the synchronized checkpoint.
+(T2) Load balancer for distributing service request (Relevant to C1, C2) 22.03 T2
+The MSP System considered the configuration of multiple servers by applying the Dispatcher Architecture Style. Through this, even if one server has a failure, if the Load Balancer connects to another server, continuous service can be provided without interruption of the service. Also, when updating a service or adding a new server, other servers can provide the service, so high availability can be satisfied. However, failure of the dispatcher itself may also occur. In such a situation, the dispatcher is duplicated to ensure availability, so when the primary dispatcher fails, the secondary dispatcher can operate instead by using the mutual heartbeat.
+(T3) Prepare Passive Redundancy of Dispatcher (Relevant to C3) 22.05 T3
+Since dispatchers do not perform many functions and focus on network transactions, the probability of problems occurring is not high. However, in the event of a problem, if an abnormality occurs in a new user or server, the logic for reallocation does not proceed, causing inconvenience to the user. Therefore, if a problem occurs, replace Dispatcher with Passive Redundancy. In the case of dispatchers, it is not necessary to maintain active redundancy because state resynchronization does not take long if only the function operates normally.
+(T4) Server Monitoring via Dispatcher (Relevant to C4) 22.03 T4
+For high availability, it is important to detect a failure in order to overcome the failure that occurs in the MSP server. The system can use Dispatcher to detect server failures. By applying heartbeat tactic to the dispatcher of the MSP system, periodic signals are delivered to the server, and when there is no response to the dispatcher's signal, it is recognized as a server failure, and the server's failure status is notified to the staff through the screen.
+(T5) Exception Handing (Relevant to C4) 22.03 T5
+Exception is raised when one of the fault classes is recognized. The system handles general exceptions so that problems are not caused by exceptions. The part where the exception occurred is a potential defect, so the log is forwarded to the server so that the problem can be resolved later.
+(T6) Monitor and Restart S/W Agent via watchdog (Relevant to C5) 22.03 T6
+Watchdog can monitor if threads and processes are in normal operations. It sends ping to threads and processes periodically and waits their responses. If a thread or process doesn’t respond, watchdog restarts the thread or process. Watchdog itself can also be failed. Therefore, divide watchdog into two threads. The first watchdog thread monitors other threads and processes including the second watchdog thread. The second watchdog thread only checks if the first watchdog thread alive. If the second watchdog thread cannot receive ping for a certain period, it restarts the first thread.
+(T7) Payment Service health check (Relevant to C6) 22.05 T5
+Like the STT service, the payment service also determines the service to proceed with payment through health check. There are many reliable services in the market. Since speed and accuracy are the most important things for payment, a system to replace in case of a problem should be secured.
+(T8) Data Duplication and Shared Storage (Relevant to C7) 22.03 T7
+The system is configured to duplication database server for high availability and share storage to minimize data integrity issues. Since there are two database servers that access the storage, if there is a problem with the active database, the service can be continued through the standby database. Cause
+the stack holder said that this platform can potentially be utilized by various mobility sharing service providers, I think that the system's database redundancy is a sufficient investment for availability.
