@@ -60,3 +60,11 @@ Like the STT service, the payment service also determines the service to proceed
 (T8) Data Duplication and Shared Storage (Relevant to C7) 22.03 T7
 The system is configured to duplication database server for high availability and share storage to minimize data integrity issues. Since there are two database servers that access the storage, if there is a problem with the active database, the service can be continued through the standby database. Cause
 the stack holder said that this platform can potentially be utilized by various mobility sharing service providers, I think that the system's database redundancy is a sufficient investment for availability.
+
+
+
+이미 반영되어 있을때 참고할 것
+	(T10) Design with High Modularity (Relevant to C10)
+This tactic is to apply the principle of modular design for the platform. That is, we need to design components to provide high cohesiveness and low coupling with other components.
+	Already Applied in View-based Design
+This tactic of applying modularity design has also been used during the architecture design for functional, information, and behavior views.
